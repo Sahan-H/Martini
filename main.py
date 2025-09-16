@@ -27,7 +27,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # API_KEY = os.getenv("GROQ_API_KEY")
-API_KEY = st.secrets["api_keys"]["GROQ_API_KEY"]
+# API_KEY = st.secrets["api_keys"]["GROQ_API_KEY"]
 
 # Format nicely
 formatted_time = now.strftime("%I:%M %p %z, %A, %B %d, %Y")
@@ -112,11 +112,11 @@ def setup_db():
 
 def initialize_llm_and_db():
     """Initialize LLM and database connections"""
-    if API_KEY == "your-api-key-here":
-        st.error("Please set your GROQ_API_KEY environment variable")
-        st.stop()
+    # if API_KEY == "your-api-key-here":
+    #     st.error("Please set your GROQ_API_KEY environment variable")
+    #     st.stop()
 
-    llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=API_KEY)
+    llm = ChatGroq(model="llama-3.3-70b-versatile", api_key="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")
     db = SQLDatabase.from_uri(f"sqlite:///{DB_PATH}")
     return llm, db
 
