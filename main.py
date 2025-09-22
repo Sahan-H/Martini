@@ -28,7 +28,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# API_KEY = os.getenv("GROQ_API_KEY")
+API_KEY = os.getenv("GROQ_API_KEY")
+print(API_KEY)
 # API_KEY = st.secrets["api_keys"]["GROQ_API_KEY"]
 
 # Format nicely
@@ -118,7 +119,7 @@ def initialize_llm_and_db():
     #     st.error("Please set your GROQ_API_KEY environment variable")
     #     st.stop()
 
-    llm = ChatGroq(model="llama-3.3-70b-versatile", api_key="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")
+    llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=API_KEY)
     db = SQLDatabase.from_uri(f"sqlite:///{DB_PATH}")
     return llm, db
 
@@ -164,10 +165,16 @@ def setup_rag_chain(llm):
     retriever = st.session_state.vectorstore.as_retriever()
 
     qa_system_prompt = (
-        "You are an assistant for question-answering tasks about Revox.io. "
-        "Use the retrieved context to answer concisely. Include a snippet of the relevant section from the website as a source preview."
-        "\n\n{context}"
+        "You are Martini, an assistant that answers user questions about Revox.io. "
+        "The user will type their question in a text box. "
+        "Always use the retrieved context below to provide your answer. "
+        "Your response must be concise, accurate, and written in natural language. "
+        "After your answer, include a short preview snippet from the relevant section of the website "
+        "to show the source of the information (similar to a search snippet). "
+        "If the answer cannot be found in the provided context, say you don’t know and do not make up information."
+        "\n\nContext:\n{context}"
     )
+
     qa_prompt = ChatPromptTemplate.from_messages([("system", qa_system_prompt), ("human", "{input}")])
     question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
     return create_retrieval_chain(retriever, question_answer_chain)
@@ -518,10 +525,37 @@ with tab1:
     if question and rag_chain:
         try:
             instructions = """
-            You are an expert assistant for Revox.io. 
-            Keep answers concise with bullet points when appropriate.
-            Use only verified information from documentation.
-            Provide examples when relevant.
+    You are Martini, an expert assistant for Revox.io. 
+    The user will type their question in a text box. 
+    Your job is to answer clearly, concisely, and only using the retrieved context below.
+    
+    Follow these rules strictly:
+    1. Use only the provided context to answer the question.
+    2. Keep answers concise and well-structured. Use bullet points when appropriate.
+    3. Provide examples if they help clarify the answer.
+    4. After the main answer, include a short preview snippet from the relevant section of the website.
+    5. The snippet must:
+       - Be no longer than 1–2 sentences (max ~40 words).
+       - Be human-readable, not raw HTML, menus, or navigation text.
+       - Avoid sections that look like lists of links or headings.
+       - Come directly from the provided context.
+       - Show only the most relevant part that supports your answer.
+    6. If no relevant information is found in the context, say you don’t know. Do not invent information.
+    
+    Context:
+    {context}
+    
+    Question: {question}
+    
+    Format your response as:
+    
+    <concise answer here>
+    
+    Source Snippet:
+    - Must be 1–2 full sentences (~40 words max) from the context that directly answer the question.
+    - Ignore headings, menus, page navigation, lists of links, or single words.
+    - Only include meaningful, human-readable text that provides context or supports the answer.
+    - If multiple sentences are relevant, choose the one that is most directly related to the question.
             """
             prompt = f"{instructions}\n\nQuestion: {question}"
             response = rag_chain.invoke({"input": prompt})
@@ -529,14 +563,6 @@ with tab1:
             st.markdown("**Answer:**")
             st.info(response["answer"])
 
-            # if response.get("context"):
-            #     with st.expander("Source Snippets"):
-            #         for i, doc in enumerate(response["context"][:3]):
-            #             snippet = doc.page_content[:300] + '...' if len(doc.page_content) > 300 else doc.page_content
-            #             source = doc.metadata.get("source", "Unknown")
-            #             st.write(f"**Source {i + 1}:** {source}")
-            #             st.write(snippet)
-            #             st.divider()
         except Exception as e:
             st.error(f"Error processing question: {e}")
 
@@ -635,7 +661,7 @@ with tab4:
                                                         client_data.get('group_type'))
                                                      if client_data.get('group_type') in ["Regular Clients",
                                                                                           "One-Time Jobs",
-                                                                                          "VIP Clients"] else 0),
+                                                                                         "VIP Clients"] else 0),
                                                     key="form_client_group")
 
                     updated_form_data['client'] = {
