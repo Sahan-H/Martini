@@ -29,7 +29,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 API_KEY = os.getenv("GROQ_API_KEY")
-print(API_KEY)
 # API_KEY = st.secrets["api_keys"]["GROQ_API_KEY"]
 
 # Format nicely
