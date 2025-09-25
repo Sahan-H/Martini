@@ -111,7 +111,7 @@ def setup_db():
 
         conn.commit()
 
-@st.cache_resource
+
 def initialize_llm_and_db():
     """Initialize LLM and database connections"""
     # if API_KEY == "your-api-key-here":
@@ -139,7 +139,6 @@ def parse_duration(duration_str):
     except (ValueError, TypeError):
         return 2  # Default duration on error
 
-@st.cache_resource
 def setup_rag_chain(llm):
     """Setup RAG chain for content Q&A"""
     if 'vectorstore' not in st.session_state:
@@ -220,7 +219,7 @@ def get_voice_recognition_html():
     </button>
     """
 
-@st.cache_data
+
 def generate_insights(db, llm):
     """Generate proactive insights from database"""
     try:
@@ -523,64 +522,48 @@ with tab1:
     question = st.text_input("Type your question:", key="qa_input")
 
     if question and rag_chain:
-        with st.spinner("Processing question..."):
-            try:
-                instructions = """
-        You are Martini, an expert assistant for Revox.io. 
-        The user will type their question in a text box. 
-        Your job is to answer clearly, concisely, and only using the retrieved context below.
-        
-        Follow these rules strictly:
-        1. Use only the provided context to answer the question.
-        2. Keep answers concise and well-structured. Use bullet points when appropriate.
-        3. Provide examples if they help clarify the answer.
-        4. After the main answer, include a short preview snippet from the relevant section of the website.
-        5. The snippet must:
-           - Be no longer than 1–2 sentences (max ~40 words).
-           - Be human-readable, not raw HTML, menus, or navigation text.
-           - Avoid sections that look like lists of links or headings.
-           - Come directly from the provided context.
-           - Show only the most relevant part that supports your answer.
-        6. If no relevant information is found in the context, say you don’t know. Do not invent information.
-        
-        Context:
-        {context}
-        
-        Question: {question}
-        
-        Format your response as:
-        
-        <concise answer here>
-        
-        Source Snippet:
-        - Must be 1–2 full sentences (~40 words max) from the context that directly answer the question.
-        - Ignore headings, menus, page navigation, lists of links, or single words.
-        - Only include meaningful, human-readable text that provides context or supports the answer.
-        - If multiple sentences are relevant, choose the one that is most directly related to the question.
-                """
-                prompt = f"{instructions}\n\nQuestion: {question}"
-                response = rag_chain.invoke({"input": prompt})
+        try:
+            instructions = """
+    You are Martini, an expert assistant for Revox.io. 
+    The user will type their question in a text box. 
+    Your job is to answer clearly, concisely, and only using the retrieved context below.
+    
+    Follow these rules strictly:
+    1. Use only the provided context to answer the question.
+    2. Keep answers concise and well-structured. Use bullet points when appropriate.
+    3. Provide examples if they help clarify the answer.
+    4. After the main answer, include a short preview snippet from the relevant section of the website.
+    5. The snippet must:
+       - Be no longer than 1–2 sentences (max ~40 words).
+       - Be human-readable, not raw HTML, menus, or navigation text.
+       - Avoid sections that look like lists of links or headings.
+       - Come directly from the provided context.
+       - Show only the most relevant part that supports your answer.
+    6. If no relevant information is found in the context, say you don’t know. Do not invent information.
+    
+    Context:
+    {context}
+    
+    Question: {question}
+    
+    Format your response as:
+    
+    <concise answer here>
+    
+    Source Snippet:
+    - Must be 1–2 full sentences (~40 words max) from the context that directly answer the question.
+    - Ignore headings, menus, page navigation, lists of links, or single words.
+    - Only include meaningful, human-readable text that provides context or supports the answer.
+    - If multiple sentences are relevant, choose the one that is most directly related to the question.
+            """
+            prompt = f"{instructions}\n\nQuestion: {question}"
+            response = rag_chain.invoke({"input": prompt})
 
-                st.markdown("**Answer:**")
-                st.info(response["answer"])
+            st.markdown("**Answer:**")
+            st.info(response["answer"])
 
-            except Exception as e:
-                st.error(f"Error processing question: {e}")
-
-# with tab2:
-#     st.header("Proactive Insights")
-#
-#     col1, col2 = st.columns([3, 1])
-#     with col2:
-#         if st.button("🔄 Refresh Insights"):
-#             if 'insights' in st.session_state:
-#                 del st.session_state.insights
-#
-#     if 'insights' not in st.session_state:
-#         with st.spinner("Generating insights..."):
-#             st.session_state.insights = generate_insights(db, llm)
-#
-#     st.write(st.session_state.insights)
+        except Exception as e:
+            st.error(f"Error processing question: {e}")
 
 with tab2:
     st.header("Proactive Insights")
@@ -588,13 +571,14 @@ with tab2:
     col1, col2 = st.columns([3, 1])
     with col2:
         if st.button("🔄 Refresh Insights"):
-            with st.spinner("Generating insights..."):
-                st.session_state.insights = generate_insights(db, llm)
+            if 'insights' in st.session_state:
+                del st.session_state.insights
 
-    if 'insights' in st.session_state:
-        st.write(st.session_state.insights)
-    else:
-        st.info("Click 'Refresh Insights' to generate insights.")
+    if 'insights' not in st.session_state:
+        with st.spinner("Generating insights..."):
+            st.session_state.insights = generate_insights(db, llm)
+
+    st.write(st.session_state.insights)
 
 with tab3:
     st.header("Natural Language DB Query")
